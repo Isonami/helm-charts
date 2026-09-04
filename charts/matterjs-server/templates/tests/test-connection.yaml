@@ -1,0 +1,33 @@
+{{- if .Values.service.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "matterjs-server.fullname" . }}-test-connection
+  labels:
+    {{- include "matterjs-server.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: curl
+      image: curlimages/curl:8.12.1
+      imagePullPolicy: IfNotPresent
+      args:
+        - --fail
+        - --silent
+        - --show-error
+        - http://{{ include "matterjs-server.fullname" . }}:{{ .Values.service.port }}/health
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+{{- end }}

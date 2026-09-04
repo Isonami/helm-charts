@@ -1,0 +1,31 @@
+Matter.js Server has been installed.
+
+{{- if not .Values.hostNetwork }}
+
+WARNING: hostNetwork is disabled. The dashboard and WebSocket API are available
+through the Kubernetes Service, but Matter/mDNS discovery usually requires direct
+host networking. Enable it with:
+
+  --set hostNetwork=true
+
+When enabled, port {{ .Values.service.port }} is exposed directly on the selected node.
+{{- else }}
+
+Host networking is enabled. Connect to a node running the pod on port
+{{ .Values.service.port }}. You can locate it with:
+
+  kubectl get pod -l app.kubernetes.io/instance={{ .Release.Name }} -o wide
+{{- end }}
+{{- if .Values.service.enabled }}
+
+To access the dashboard locally through the Service:
+
+  kubectl port-forward service/{{ include "matterjs-server.fullname" . }} 5580:{{ .Values.service.port }}
+
+Then open http://127.0.0.1:5580/ (WebSocket endpoint: ws://127.0.0.1:5580/ws).
+{{- end }}
+
+SECURITY: Matter.js Server has no built-in authentication and binds to all
+interfaces by default. Restrict network access or place an authenticating reverse
+proxy in front of it. Set config.LISTEN_ADDRESS when an explicit bind address is
+required.
