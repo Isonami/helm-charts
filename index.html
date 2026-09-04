@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Helm charts published by Isonami">
+  <meta name="color-scheme" content="dark light">
+  <title>Isonami Helm Charts</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07111f;
+      --panel: rgba(15, 30, 50, 0.82);
+      --panel-border: rgba(148, 163, 184, 0.17);
+      --text: #e8eef7;
+      --muted: #9dafc5;
+      --blue: #60a5fa;
+      --cyan: #22d3ee;
+      --green: #6ee7b7;
+      --code: #050c16;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(34, 211, 238, 0.12), transparent 30rem),
+        radial-gradient(circle at 85% 5%, rgba(96, 165, 250, 0.16), transparent 32rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+
+    a { color: var(--cyan); }
+    a:hover { color: #a5f3fc; }
+
+    .shell {
+      width: min(1040px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 5rem 0 3rem;
+    }
+
+    header { max-width: 760px; margin-bottom: 2.5rem; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-bottom: 1rem;
+      color: var(--green);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 18px var(--green);
+      content: "";
+    }
+
+    h1 {
+      margin: 0 0 1rem;
+      font-size: clamp(2.6rem, 8vw, 5rem);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
+    }
+
+    header p {
+      max-width: 660px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      padding: 1.5rem;
+      border: 1px solid var(--panel-border);
+      border-radius: 1rem;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .wide { grid-column: 1 / -1; }
+
+    .chart-heading { margin-top: 0.75rem; }
+    .chart-heading .description { margin-bottom: 0; }
+
+    .chart-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+
+    .status {
+      grid-column: 1 / -1;
+      margin: 0;
+      padding: 1rem 0;
+      color: var(--muted);
+    }
+
+    .status.error { color: #fda4af; }
+
+    h2 {
+      margin: 0 0 0.4rem;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .description { margin: 0 0 1.25rem; color: var(--muted); }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin: 1rem 0 0;
+    }
+
+    .badge {
+      padding: 0.3rem 0.65rem;
+      border: 1px solid rgba(96, 165, 250, 0.25);
+      border-radius: 999px;
+      color: #bfdbfe;
+      background: rgba(59, 130, 246, 0.09);
+      font-size: 0.78rem;
+      font-weight: 650;
+    }
+
+    pre {
+      position: relative;
+      overflow-x: auto;
+      margin: 1rem 0 0;
+      padding: 1rem 1.1rem;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 0.75rem;
+      color: #d5e5f7;
+      background: var(--code);
+      font: 0.9rem/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.65rem;
+      padding: 0.65rem 0.95rem;
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      border-radius: 0.7rem;
+      color: #cffafe;
+      background: rgba(34, 211, 238, 0.09);
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .button:hover {
+      color: white;
+      background: rgba(34, 211, 238, 0.16);
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 2rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    footer p { margin: 0; }
+
+    @media (max-width: 700px) {
+      .shell { padding-top: 3rem; }
+      .grid, .chart-list { grid-template-columns: 1fr; }
+      .wide { grid-column: auto; }
+      footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="eyebrow">Helm repository</div>
+      <h1>Isonami<br>Helm Charts</h1>
+      <p>Community-maintained Kubernetes packages, published as versioned Helm releases and ready to install.</p>
+    </header>
+
+    <section class="grid" aria-label="Repository information">
+      <article class="card wide">
+        <h2>Use this repository</h2>
+        <p class="description">Add the repository, refresh its index, and view the available charts.</p>
+        <pre><code>helm repo add isonami https://isonami.github.io/helm-charts
+helm repo update
+helm search repo isonami</code></pre>
+      </article>
+
+      <div class="chart-heading wide">
+        <h2>Available charts</h2>
+        <p class="description">Loaded from the published Helm repository index.</p>
+      </div>
+
+      <div id="chart-list" class="chart-list wide" aria-live="polite" aria-busy="true">
+        <p class="status">Loading charts from index.yaml…</p>
+        <noscript><p class="status error">JavaScript is required to display the chart list. You can <a href="index.yaml">view index.yaml directly</a>.</p></noscript>
+      </div>
+
+      <article class="card wide">
+        <h2>Repository metadata</h2>
+        <p class="description">Helm clients consume the repository index directly. Releases and source are available on GitHub.</p>
+        <div class="links">
+          <a class="button" href="index.yaml">View index.yaml</a>
+          <a class="button" href="https://github.com/Isonami/helm-charts">View source</a>
+        </div>
+      </article>
+    </section>
+
+    <footer>
+      <p>Published with GitHub Pages and Helm Chart Releaser.</p>
+      <p>Maintained by <a href="https://github.com/Isonami">Isonami</a>.</p>
+    </footer>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha384-+pxiN6T7yvpryuJmE1gM9PX7yQit15auDb+ZwwvJOd/4be2Cie5/IuVXgQb/S9du" crossorigin="anonymous"></script>
+  <script>
+    const chartList = document.getElementById("chart-list");
+
+    function addBadge(container, text) {
+      const badge = document.createElement("span");
+      badge.className = "badge";
+      badge.textContent = text;
+      container.appendChild(badge);
+    }
+
+    function addLink(container, text, href) {
+      const link = document.createElement("a");
+      link.className = "button";
+      link.textContent = text;
+      link.href = href;
+      container.appendChild(link);
+    }
+
+    function renderChart(name, versions) {
+      const latest = versions[0];
+      const card = document.createElement("article");
+      card.className = "card";
+
+      const title = document.createElement("h2");
+      title.textContent = name;
+      card.appendChild(title);
+
+      const description = document.createElement("p");
+      description.className = "description";
+      description.textContent = latest.description || "Helm chart";
+      card.appendChild(description);
+
+      const command = document.createElement("pre");
+      const code = document.createElement("code");
+      code.textContent = `helm install ${name} \\\n  isonami/${name}`;
+      command.appendChild(code);
+      card.appendChild(command);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.setAttribute("aria-label", `${name} chart metadata`);
+      addBadge(meta, `Chart ${latest.version}`);
+      if (latest.appVersion) addBadge(meta, `App ${latest.appVersion}`);
+      if (latest.kubeVersion) addBadge(meta, `Kubernetes ${latest.kubeVersion}`);
+      if (versions.length > 1) addBadge(meta, `${versions.length} versions`);
+      card.appendChild(meta);
+
+      const links = document.createElement("div");
+      links.className = "links";
+      addLink(links, "Documentation", `https://github.com/Isonami/helm-charts/tree/main/charts/${encodeURIComponent(name)}`);
+      if (latest.urls && latest.urls[0]) addLink(links, "Download chart", latest.urls[0]);
+      card.appendChild(links);
+
+      return card;
+    }
+
+    async function loadCharts() {
+      try {
+        const response = await fetch("index.yaml", { cache: "no-cache" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const index = jsyaml.load(await response.text());
+        const entries = Object.entries(index.entries || {}).sort(([a], [b]) => a.localeCompare(b));
+        chartList.replaceChildren();
+
+        if (!entries.length) {
+          const empty = document.createElement("p");
+          empty.className = "status";
+          empty.textContent = "No charts have been published yet.";
+          chartList.appendChild(empty);
+        } else {
+          for (const [name, versions] of entries) {
+            if (Array.isArray(versions) && versions.length) chartList.appendChild(renderChart(name, versions));
+          }
+        }
+      } catch (error) {
+        const message = document.createElement("p");
+        message.className = "status error";
+        message.textContent = `Unable to load the chart index: ${error.message}`;
+        chartList.replaceChildren(message);
+      } finally {
+        chartList.setAttribute("aria-busy", "false");
+      }
+    }
+
+    loadCharts();
+  </script>
+</body>
+</html>
