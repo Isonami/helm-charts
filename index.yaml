@@ -1,0 +1,27 @@
+apiVersion: v1
+entries:
+  matterjs-server:
+  - annotations:
+      artifacthub.io/license: Apache-2.0
+    apiVersion: v2
+    appVersion: 1.4.0
+    created: "2026-09-04T12:26:11.945668992Z"
+    description: A Helm chart for Matter.js Server
+    digest: 76f525a424f4b9474f3d16f4eb24a50dacb33125fcfe2fc94c281e7164e50830
+    home: https://github.com/matter-js/matterjs-server
+    keywords:
+    - matter
+    - smart-home
+    - home-automation
+    kubeVersion: '>=1.23.0-0'
+    maintainers:
+    - name: Isonami
+      url: https://github.com/Isonami
+    name: matterjs-server
+    sources:
+    - https://github.com/matter-js/matterjs-server
+    type: application
+    urls:
+    - https://github.com/Isonami/helm-charts/releases/download/matterjs-server-0.1.0/matterjs-server-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-09-04T12:26:11.945680865Z"
