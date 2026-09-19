@@ -209,6 +209,7 @@ A digest takes precedence over `image.tag`. Review upstream release changes, bac
 | `persistence.size` | `1Gi` | New PVC request size |
 | `securityContext.privileged` | `false` | Run privileged when required by the runtime |
 | `extraEnv`, `envFrom` | `[]` | Additional environment sources |
+| `initContainers` | `[]` | Additional init containers rendered into the pod spec |
 | `extraVolumes`, `extraVolumeMounts` | `[]` | Additional pod storage |
 | `nodeSelector`, `affinity`, `tolerations` | empty | Pin OTBR to its hardware node |
 | `resources` | `{}` | Container requests and limits |

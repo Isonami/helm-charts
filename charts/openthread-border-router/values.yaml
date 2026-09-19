@@ -129,6 +129,8 @@ extraEnv: []
 envFrom: []
 resources: {}
 
+# Additional init containers, rendered directly into the pod spec.
+initContainers: []
 extraVolumes: []
 extraVolumeMounts: []
 nodeSelector: {}
