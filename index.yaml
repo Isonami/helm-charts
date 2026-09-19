@@ -24,4 +24,30 @@ entries:
     urls:
     - https://github.com/Isonami/helm-charts/releases/download/matterjs-server-0.1.0/matterjs-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-09-04T12:26:11.945680865Z"
+  openthread-border-router:
+  - annotations:
+      artifacthub.io/license: BSD-3-Clause
+    apiVersion: v2
+    appVersion: v2026.09.0
+    created: "2026-09-19T22:43:35.742484127Z"
+    description: A Helm chart for OpenThread Border Router
+    digest: 73fa8c63cbd1a764803d2c3c5bd0b534e1a1b88b92a956e75abfc87c0cbe27c1
+    home: https://openthread.io/guides/border-router
+    keywords:
+    - openthread
+    - thread
+    - border-router
+    - matter
+    - iot
+    kubeVersion: '>=1.23.0-0'
+    maintainers:
+    - name: Isonami
+      url: https://github.com/Isonami
+    name: openthread-border-router
+    sources:
+    - https://github.com/openthread/ot-br-posix
+    type: application
+    urls:
+    - https://github.com/Isonami/helm-charts/releases/download/openthread-border-router-0.1.3/openthread-border-router-0.1.3.tgz
+    version: 0.1.3
+generated: "2026-09-19T22:43:35.742488098Z"
