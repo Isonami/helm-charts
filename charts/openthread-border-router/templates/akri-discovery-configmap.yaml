@@ -1,0 +1,11 @@
+{{- if .Values.config.rcp.akriDiscovery.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "openthread-border-router.fullname" . }}-akri-discovery
+  labels:
+    {{- include "openthread-border-router.labels" . | nindent 4 }}
+data:
+  akri-discovery.sh: |
+{{ .Files.Get "scripts/akri-discovery.sh" | indent 4 }}
+{{- end }}

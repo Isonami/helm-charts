@@ -1,0 +1,9 @@
+# VCS and editor files
+.git/
+.gitignore
+.idea/
+.vscode/
+*.swp
+*.tmp
+*.tgz
+.DS_Store

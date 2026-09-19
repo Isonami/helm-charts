@@ -1,0 +1,145 @@
+# Default values for OpenThread Border Router.
+
+nameOverride: ""
+fullnameOverride: ""
+commonLabels: {}
+
+image:
+  repository: openthread/border-router
+  # Defaults to Chart.appVersion (latest) when empty.
+  tag: ""
+  # When set, digest takes precedence over tag (for example, sha256:...).
+  digest: ""
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+# OTBR requires direct access to the node's interfaces for routing, multicast,
+# mDNS, and TREL. Disabling this is supported but is not a typical deployment.
+hostNetwork: true
+# Empty selects ClusterFirstWithHostNet with host networking, else ClusterFirst.
+dnsPolicy: ""
+hostAliases: []
+
+config:
+  # Node interface connected to the adjacent Ethernet/Wi-Fi network.
+  infraInterface: eth0
+  threadInterface: wpan0
+  logLevel: 7
+  vendorName: OpenThread
+  vendorModel: BorderRouter
+  rcp:
+    # An explicit Spinel URL overrides generated device/baudrate settings.
+    # This also supports network-attached RCPs when device.enabled=false.
+    url: ""
+    baudrate: 1000000
+    device:
+      enabled: true
+      hostPath: /dev/ttyACM0
+      containerPath: /dev/ttyACM0
+    akriDiscovery:
+      enabled: false
+      mountPath: /opt/otbr
+  tunDevice:
+    enabled: true
+    hostPath: /dev/net/tun
+    containerPath: /dev/net/tun
+
+service:
+  enabled: true
+  type: ClusterIP
+  annotations: {}
+  clusterIP: ""
+  web:
+    port: 8080
+    nodePort: null
+  rest:
+    port: 8081
+    nodePort: null
+
+persistence:
+  enabled: true
+  # Use an existing PVC instead of creating one.
+  existingClaim: ""
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  annotations: {}
+  selector: {}
+  # Used only when enabled=false. Empty means an unbounded emptyDir.
+  emptyDir:
+    sizeLimit: ""
+  mountPath: /data
+
+serviceAccount:
+  create: true
+  automountServiceAccountToken: false
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+# OTBR runs as root and requires NET_ADMIN to create interfaces and firewall
+# rules. Some runtimes also require privileged=true for host device access.
+securityContext:
+  privileged: false
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  runAsUser: 0
+  runAsGroup: 0
+  capabilities:
+    drop:
+      - ALL
+    add:
+      - NET_ADMIN
+
+probes:
+  startup:
+    enabled: true
+    httpGet:
+      path: /.well-known/thread/br-rest
+      port: rest
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 60
+  readiness:
+    enabled: true
+    httpGet:
+      path: /.well-known/thread/br-rest
+      port: rest
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  liveness:
+    enabled: true
+    httpGet:
+      path: /.well-known/thread/br-rest
+      port: rest
+    periodSeconds: 30
+    timeoutSeconds: 3
+    failureThreshold: 6
+
+# Structured environment entries and complete Secret/ConfigMap imports.
+# Chart-managed OT_* variables may not be duplicated in extraEnv.
+extraEnv: []
+envFrom: []
+resources: {}
+
+extraVolumes: []
+extraVolumeMounts: []
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+priorityClassName: ""
+terminationGracePeriodSeconds: 30
+
+test:
+  image:
+    repository: curlimages/curl
+    tag: 8.12.1
+    pullPolicy: IfNotPresent

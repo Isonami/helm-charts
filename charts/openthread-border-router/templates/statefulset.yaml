@@ -1,0 +1,196 @@
+{{- $managedEnv := list "OT_RCP_DEVICE" "OT_RCP_BAUDRATE" "OT_INFRA_IF" "OT_THREAD_IF" "OT_LOG_LEVEL" "OT_VENDOR_NAME" "OT_VENDOR_MODEL" "OT_WEB_LISTEN_ADDR" "OT_WEB_LISTEN_PORT" "OT_REST_LISTEN_ADDR" "OT_REST_LISTEN_PORT" }}
+{{- range .Values.extraEnv }}
+{{- if has .name $managedEnv }}
+{{- fail (printf "extraEnv may not redefine chart-managed variable %s" .name) }}
+{{- end }}
+{{- end }}
+{{- if and (not .Values.config.rcp.akriDiscovery.enabled) (not .Values.config.rcp.device.enabled) (not .Values.config.rcp.url) }}
+{{- fail "config.rcp.url is required when config.rcp.device.enabled=false and config.rcp.akriDiscovery.enabled=false" }}
+{{- end }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "openthread-border-router.fullname" . }}
+  labels:
+    {{- include "openthread-border-router.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "openthread-border-router.fullname" . }}
+  replicas: 1
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "openthread-border-router.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- if or .Values.podAnnotations .Values.config.rcp.akriDiscovery.enabled }}
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.config.rcp.akriDiscovery.enabled }}
+        checksum/akri-discovery: {{ .Files.Get "scripts/akri-discovery.sh" | sha256sum }}
+        {{- end }}
+      {{- end }}
+      labels:
+        {{- include "openthread-border-router.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "openthread-border-router.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      hostNetwork: {{ .Values.hostNetwork }}
+      dnsPolicy: {{ default (ternary "ClusterFirstWithHostNet" "ClusterFirst" .Values.hostNetwork) .Values.dnsPolicy }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . | quote }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: openthread-border-router
+          image: {{ include "openthread-border-router.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- if .Values.config.rcp.akriDiscovery.enabled }}
+          command:
+            - {{ printf "%s/akri-discovery.sh" (trimSuffix "/" .Values.config.rcp.akriDiscovery.mountPath) | quote }}
+          {{- end }}
+          ports:
+            - name: web
+              containerPort: {{ .Values.service.web.port }}
+              protocol: TCP
+            - name: rest
+              containerPort: {{ .Values.service.rest.port }}
+              protocol: TCP
+          env:
+            {{- if .Values.config.rcp.akriDiscovery.enabled }}
+            - name: OT_RCP_BAUDRATE
+              value: {{ .Values.config.rcp.baudrate | quote }}
+            {{- else }}
+            - name: OT_RCP_DEVICE
+              value: {{ include "openthread-border-router.rcpUrl" . | quote }}
+            {{- end }}
+            - name: OT_INFRA_IF
+              value: {{ .Values.config.infraInterface | quote }}
+            - name: OT_THREAD_IF
+              value: {{ .Values.config.threadInterface | quote }}
+            - name: OT_LOG_LEVEL
+              value: {{ .Values.config.logLevel | quote }}
+            - name: OT_VENDOR_NAME
+              value: {{ .Values.config.vendorName | quote }}
+            - name: OT_VENDOR_MODEL
+              value: {{ .Values.config.vendorModel | quote }}
+            - name: OT_WEB_LISTEN_ADDR
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: OT_WEB_LISTEN_PORT
+              value: {{ .Values.service.web.port | quote }}
+            - name: OT_REST_LISTEN_ADDR
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: OT_REST_LISTEN_PORT
+              value: {{ .Values.service.rest.port | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.probes.startup.enabled }}
+          startupProbe:
+            {{- omit .Values.probes.startup "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            {{- omit .Values.probes.readiness "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            {{- omit .Values.probes.liveness "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- if and .Values.config.rcp.device.enabled (not .Values.config.rcp.akriDiscovery.enabled) }}
+            - name: rcp-device
+              mountPath: {{ .Values.config.rcp.device.containerPath }}
+            {{- end }}
+            {{- if .Values.config.rcp.akriDiscovery.enabled }}
+            - name: akri-discovery
+              mountPath: {{ .Values.config.rcp.akriDiscovery.mountPath }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.config.tunDevice.enabled }}
+            - name: tun-device
+              mountPath: {{ .Values.config.tunDevice.containerPath }}
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "openthread-border-router.pvcName" . }}
+          {{- else if .Values.persistence.emptyDir.sizeLimit }}
+          emptyDir:
+            sizeLimit: {{ .Values.persistence.emptyDir.sizeLimit }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- if and .Values.config.rcp.device.enabled (not .Values.config.rcp.akriDiscovery.enabled) }}
+        - name: rcp-device
+          hostPath:
+            path: {{ .Values.config.rcp.device.hostPath }}
+            type: CharDevice
+        {{- end }}
+        {{- if .Values.config.rcp.akriDiscovery.enabled }}
+        - name: akri-discovery
+          configMap:
+            name: {{ include "openthread-border-router.fullname" . }}-akri-discovery
+            defaultMode: 0555
+        {{- end }}
+        {{- if .Values.config.tunDevice.enabled }}
+        - name: tun-device
+          hostPath:
+            path: {{ .Values.config.tunDevice.hostPath }}
+            type: CharDevice
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,33 @@
+{{- if .Values.service.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "openthread-border-router.fullname" . }}-test-connection
+  labels:
+    {{- include "openthread-border-router.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: curl
+      image: {{ printf "%s:%s" .Values.test.image.repository .Values.test.image.tag | quote }}
+      imagePullPolicy: {{ .Values.test.image.pullPolicy }}
+      args:
+        - --fail
+        - --silent
+        - --show-error
+        - http://{{ include "openthread-border-router.fullname" . }}:{{ .Values.service.rest.port }}/.well-known/thread/br-rest
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+{{- end }}

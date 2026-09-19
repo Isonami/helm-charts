@@ -1,0 +1,34 @@
+OpenThread Border Router has been installed.
+
+The pod requires a prepared Linux node with IP forwarding and router
+advertisement handling enabled for {{ .Values.config.infraInterface }}. See:
+https://openthread.io/guides/border-router/build-docker#enable_ip_forwarding
+
+{{- if .Values.config.rcp.akriDiscovery.enabled }}
+Akri discovery is enabled. The container will select the first /dev/tty* value
+from the UDEV_DEVNODE_* environment variables supplied with the allocation.
+{{- else if .Values.config.rcp.device.enabled }}
+The RCP device {{ .Values.config.rcp.device.hostPath }} must exist on the selected node.
+{{- else }}
+The USB RCP mount is disabled; OTBR will use the configured Spinel URL.
+{{- end }}
+{{- if not .Values.securityContext.privileged }}
+
+Privileged mode is disabled. If your container runtime blocks host character
+devices or network administration despite NET_ADMIN, enable it with:
+
+  --set securityContext.privileged=true
+{{- end }}
+{{- if .Values.service.enabled }}
+
+To access the web UI locally:
+
+  kubectl port-forward service/{{ include "openthread-border-router.fullname" . }} 8080:{{ .Values.service.web.port }}
+
+Then open http://127.0.0.1:8080/. The REST API is exposed on Service port
+{{ .Values.service.rest.port }}.
+{{- end }}
+
+SECURITY: The OTBR web UI and REST API do not provide authentication. Restrict
+Service and host-network access to trusted clients; do not expose them directly
+to the internet.

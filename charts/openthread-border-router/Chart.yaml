@@ -1,0 +1,21 @@
+apiVersion: v2
+name: openthread-border-router
+description: A Helm chart for OpenThread Border Router
+type: application
+version: 0.1.3
+appVersion: "v2026.09.0"
+kubeVersion: ">=1.23.0-0"
+home: https://openthread.io/guides/border-router
+sources:
+  - https://github.com/openthread/ot-br-posix
+keywords:
+  - openthread
+  - thread
+  - border-router
+  - matter
+  - iot
+maintainers:
+  - name: Isonami
+    url: https://github.com/Isonami
+annotations:
+  artifacthub.io/license: BSD-3-Clause
