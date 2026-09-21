@@ -29,6 +29,31 @@ entries:
       artifacthub.io/license: BSD-3-Clause
     apiVersion: v2
     appVersion: v2026.09.0
+    created: "2026-09-21T23:20:37.623361709Z"
+    description: A Helm chart for OpenThread Border Router
+    digest: 1c3919e6ea048f27948745e82c73357826515a4f84365931c4cc3ce07593d7ad
+    home: https://openthread.io/guides/border-router
+    keywords:
+    - openthread
+    - thread
+    - border-router
+    - matter
+    - iot
+    kubeVersion: '>=1.23.0-0'
+    maintainers:
+    - name: Isonami
+      url: https://github.com/Isonami
+    name: openthread-border-router
+    sources:
+    - https://github.com/openthread/ot-br-posix
+    type: application
+    urls:
+    - https://github.com/Isonami/helm-charts/releases/download/openthread-border-router-0.1.6/openthread-border-router-0.1.6.tgz
+    version: 0.1.6
+  - annotations:
+      artifacthub.io/license: BSD-3-Clause
+    apiVersion: v2
+    appVersion: v2026.09.0
     created: "2026-09-19T23:15:26.782791423Z"
     description: A Helm chart for OpenThread Border Router
     digest: 42abf5cd586a4ac1c900e1b5f15da8127df60ba1d6b25de800c1811ac545c6f8
@@ -75,4 +100,4 @@ entries:
     urls:
     - https://github.com/Isonami/helm-charts/releases/download/openthread-border-router-0.1.3/openthread-border-router-0.1.3.tgz
     version: 0.1.3
-generated: "2026-09-19T23:15:26.782799879Z"
+generated: "2026-09-21T23:20:37.623374152Z"
