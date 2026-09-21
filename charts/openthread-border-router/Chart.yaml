@@ -2,7 +2,7 @@ apiVersion: v2
 name: openthread-border-router
 description: A Helm chart for OpenThread Border Router
 type: application
-version: 0.1.4
+version: 0.1.6
 appVersion: "v2026.09.0"
 kubeVersion: ">=1.23.0-0"
 home: https://openthread.io/guides/border-router

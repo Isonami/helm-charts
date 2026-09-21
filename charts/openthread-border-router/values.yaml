@@ -79,13 +79,25 @@ serviceAccount:
 
 podAnnotations: {}
 podLabels: {}
+# Pod-level security settings. Kubernetes rejects net.* sysctls on pods using
+# hostNetwork, so the OTBR routing sysctls remain documented but disabled while
+# hostNetwork defaults to true. To use them, set hostNetwork=false and uncomment:
 podSecurityContext:
   seccompProfile:
     type: RuntimeDefault
+  # sysctls:
+  #   - name: net/ipv6/conf/net1/accept_ra
+  #     value: "2"
+  #   - name: net/ipv6/conf/net1/accept_ra_rt_info_max_plen
+  #     value: "64"
+  #   - name: net/ipv6/conf/all/forwarding
+  #     value: "1"
+  #   - name: net/ipv4/ip_forward
+  #     value: "1"
 
 # OTBR runs as root and requires NET_ADMIN to create interfaces and firewall
 # rules. Some runtimes also require privileged=true for host device access.
-securityContext:
+containerSecurityContext:
   privileged: false
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: false
@@ -96,6 +108,7 @@ securityContext:
       - ALL
     add:
       - NET_ADMIN
+      - NET_RAW
 
 probes:
   startup:
@@ -129,8 +142,25 @@ extraEnv: []
 envFrom: []
 resources: {}
 
-# Additional init containers, rendered directly into the pod spec.
-initContainers: []
+# Load OTBR firewall dependencies into the node kernel before starting OTBR.
+# This init container is privileged and mounts the node's /lib/modules read-only.
+kernelModules:
+  enabled: true
+  image:
+    repository: alpine
+    tag: "3.21"
+    pullPolicy: IfNotPresent
+  hostPath: /lib/modules
+  modules:
+    - ip_set
+    - xt_set
+    - xt_pkttype
+    - nf_tables
+    - nft_compat
+
+# Additional init containers, rendered directly into the pod spec after the
+# kernel-module loader.
+extraInitContainers: []
 extraVolumes: []
 extraVolumeMounts: []
 nodeSelector: {}

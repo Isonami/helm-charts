@@ -12,12 +12,12 @@ The RCP device {{ .Values.config.rcp.device.hostPath }} must exist on the select
 {{- else }}
 The USB RCP mount is disabled; OTBR will use the configured Spinel URL.
 {{- end }}
-{{- if not .Values.securityContext.privileged }}
+{{- if not .Values.containerSecurityContext.privileged }}
 
 Privileged mode is disabled. If your container runtime blocks host character
 devices or network administration despite NET_ADMIN, enable it with:
 
-  --set securityContext.privileged=true
+  --set containerSecurityContext.privileged=true
 {{- end }}
 {{- if .Values.service.enabled }}
 

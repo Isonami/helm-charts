@@ -131,10 +131,12 @@ The TUN mount can also be changed or disabled through `config.tunDevice`, althou
 
 ## Security context
 
-The container runs as root with `NET_ADMIN`, matching the upstream requirement to create interfaces and modify routing/firewall state. `securityContext.privileged` defaults to `false` as the narrower starting point:
+Pod-level and container-level settings are configured independently through `podSecurityContext` and `containerSecurityContext`.
+
+The container runs as root with `NET_ADMIN`, matching the upstream requirement to create interfaces and modify routing/firewall state. `containerSecurityContext.privileged` defaults to `false` as the narrower starting point:
 
 ```yaml
-securityContext:
+containerSecurityContext:
   privileged: false
 ```
 
@@ -143,10 +145,54 @@ Kubernetes has no portable equivalent of Docker's `--device`. Depending on the c
 ```console
 helm upgrade otbr ./openthread-border-router \
   --reuse-values \
-  --set securityContext.privileged=true
+  --set containerSecurityContext.privileged=true
 ```
 
 Privileged mode grants broad host access. Pin OTBR to a trusted node and restrict who can modify the release.
+
+The following pod sysctls are included as a commented example in `values.yaml`:
+
+```yaml
+hostNetwork: false
+podSecurityContext:
+  sysctls:
+    - name: net/ipv6/conf/all/forwarding
+      value: "1"
+    - name: net/ipv4/ip_forward
+      value: "1"
+    - name: net/ipv6/conf/net1/accept_ra
+      value: "2"
+    - name: net/ipv6/conf/net1/accept_ra_rt_info_max_plen
+      value: "64"
+```
+
+Kubernetes does not allow `net.*` pod sysctls together with `hostNetwork: true`, so they are intentionally commented while host networking remains enabled by default. With host networking, configure equivalent settings on the node as described in [Prepare the host](#prepare-the-host). With pod networking, ensure the cluster allows these unsafe sysctls and that `net1` is the intended interface.
+
+### Kernel modules
+
+A privileged init container loads the host kernel modules required by OTBR's firewall setup before the main container starts:
+
+- `ip_set`
+- `xt_set`
+- `xt_pkttype`
+- `nf_tables`
+- `nft_compat`
+
+It mounts the node's `/lib/modules` directory read-only and runs `modprobe` for each configured module. Configure or disable it through `kernelModules`:
+
+```yaml
+kernelModules:
+  enabled: true
+  hostPath: /lib/modules
+  modules:
+    - ip_set
+    - xt_set
+    - xt_pkttype
+    - nf_tables
+    - nft_compat
+```
+
+Disable the loader when modules are already managed by the node operating system or privileged init containers are prohibited. Additional entries in `extraInitContainers` run after the module loader.
 
 ## Persistence
 
@@ -207,9 +253,13 @@ A digest takes precedence over `image.tag`. Review upstream release changes, bac
 | `persistence.enabled` | `true` | Use persistent storage instead of `emptyDir` |
 | `persistence.existingClaim` | `""` | Existing PVC name |
 | `persistence.size` | `1Gi` | New PVC request size |
-| `securityContext.privileged` | `false` | Run privileged when required by the runtime |
+| `podSecurityContext` | RuntimeDefault seccomp | Pod security settings; optional non-host-network sysctls are commented in `values.yaml` |
+| `containerSecurityContext.privileged` | `false` | Run the OTBR container privileged when required by the runtime |
+| `kernelModules.enabled` | `true` | Run the privileged kernel-module loader init container |
+| `kernelModules.hostPath` | `/lib/modules` | Node kernel-module directory mounted read-only |
+| `kernelModules.modules` | OTBR firewall modules | Modules loaded with `modprobe` before OTBR starts |
 | `extraEnv`, `envFrom` | `[]` | Additional environment sources |
-| `initContainers` | `[]` | Additional init containers rendered into the pod spec |
+| `extraInitContainers` | `[]` | Additional init containers rendered after the module loader |
 | `extraVolumes`, `extraVolumeMounts` | `[]` | Additional pod storage |
 | `nodeSelector`, `affinity`, `tolerations` | empty | Pin OTBR to its hardware node |
 | `resources` | `{}` | Container requests and limits |
