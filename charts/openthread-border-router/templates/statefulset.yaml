@@ -57,23 +57,46 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      {{- if or .Values.kernelModules.enabled .Values.initContainers }}
+      {{- if or .Values.kernelConfiguration.enabled .Values.extraInitContainers }}
       initContainers:
-        {{- if .Values.kernelModules.enabled }}
-        - name: load-kernel-modules
-          image: {{ printf "%s:%s" .Values.kernelModules.image.repository .Values.kernelModules.image.tag | quote }}
-          imagePullPolicy: {{ .Values.kernelModules.image.pullPolicy }}
+        {{- if .Values.kernelConfiguration.enabled }}
+        - name: prepare-kernel-configuration
+          image: {{ printf "%s:%s" .Values.kernelConfiguration.image.repository .Values.kernelConfiguration.image.tag | quote }}
+          imagePullPolicy: {{ .Values.kernelConfiguration.image.pullPolicy }}
           command:
             - /bin/sh
             - -ec
           args:
             - |
-              for module in "$@"; do
-                modprobe "$module"
+              while [ "$#" -gt 0 ]; do
+                operation="$1"
+                shift
+                case "$operation" in
+                  module)
+                    modprobe "$1"
+                    shift
+                    ;;
+                  sysctl)
+                    name="$1"
+                    value="$2"
+                    shift 2
+                    printf '%s\n' "$value" > "/proc/sys/$name"
+                    ;;
+                  *)
+                    echo >&2 "Unknown host setup operation: $operation"
+                    exit 1
+                    ;;
+                esac
               done
-            - load-kernel-modules
-            {{- range .Values.kernelModules.modules }}
+            - prepare-kernel-configuration
+            {{- range .Values.kernelConfiguration.modules }}
+            - module
             - {{ . | quote }}
+            {{- end }}
+            {{- range .Values.kernelConfiguration.sysctls }}
+            - sysctl
+            - {{ .name | quote }}
+            - {{ .value | quote }}
             {{- end }}
           securityContext:
             privileged: true
@@ -207,10 +230,10 @@ spec:
             path: {{ .Values.config.tunDevice.hostPath }}
             type: CharDevice
         {{- end }}
-        {{- if .Values.kernelModules.enabled }}
+        {{- if .Values.kernelConfiguration.enabled }}
         - name: kernel-modules
           hostPath:
-            path: {{ .Values.kernelModules.hostPath }}
+            path: {{ .Values.kernelConfiguration.hostPath }}
             type: Directory
         {{- end }}
         {{- with .Values.extraVolumes }}

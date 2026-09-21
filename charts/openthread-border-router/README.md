@@ -150,11 +150,28 @@ helm upgrade otbr ./openthread-border-router \
 
 Privileged mode grants broad host access. Pin OTBR to a trusted node and restrict who can modify the release.
 
-The following pod sysctls are included as a commented example in `values.yaml`:
+### Host network setup init container
+
+A privileged init container loads the host kernel modules required by OTBR's firewall setup before the main container starts:
+
+- `ip_set`
+- `xt_set`
+- `xt_pkttype`
+- `nf_tables`
+- `nft_compat`
+
+It mounts the node's `/lib/modules` directory read-only and runs `modprobe` for each configured module. The same init container update requested sysctls.
 
 ```yaml
-hostNetwork: false
-podSecurityContext:
+kernelConfiguration:
+  enabled: true
+  hostPath: /lib/modules
+  modules:
+    - ip_set
+    - xt_set
+    - xt_pkttype
+    - nf_tables
+    - nft_compat
   sysctls:
     - name: net/ipv6/conf/all/forwarding
       value: "1"
@@ -166,33 +183,8 @@ podSecurityContext:
       value: "64"
 ```
 
-Kubernetes does not allow `net.*` pod sysctls together with `hostNetwork: true`, so they are intentionally commented while host networking remains enabled by default. With host networking, configure equivalent settings on the node as described in [Prepare the host](#prepare-the-host). With pod networking, ensure the cluster allows these unsafe sysctls and that `net1` is the intended interface.
-
-### Kernel modules
-
-A privileged init container loads the host kernel modules required by OTBR's firewall setup before the main container starts:
-
-- `ip_set`
-- `xt_set`
-- `xt_pkttype`
-- `nf_tables`
-- `nft_compat`
-
-It mounts the node's `/lib/modules` directory read-only and runs `modprobe` for each configured module. Configure or disable it through `kernelModules`:
-
-```yaml
-kernelModules:
-  enabled: true
-  hostPath: /lib/modules
-  modules:
-    - ip_set
-    - xt_set
-    - xt_pkttype
-    - nf_tables
-    - nft_compat
-```
-
-Disable the loader when modules are already managed by the node operating system or privileged init containers are prohibited. Additional entries in `extraInitContainers` run after the module loader.
+With the default `hostNetwork: true`, these writes modify the node's network namespace. 
+Disable the loader when modules and sysctls are managed by the node operating system or privileged init containers are prohibited. Additional entries in `extraInitContainers` run after the host setup container.
 
 ## Persistence
 
@@ -255,9 +247,10 @@ A digest takes precedence over `image.tag`. Review upstream release changes, bac
 | `persistence.size` | `1Gi` | New PVC request size |
 | `podSecurityContext` | RuntimeDefault seccomp | Pod security settings; optional non-host-network sysctls are commented in `values.yaml` |
 | `containerSecurityContext.privileged` | `false` | Run the OTBR container privileged when required by the runtime |
-| `kernelModules.enabled` | `true` | Run the privileged kernel-module loader init container |
-| `kernelModules.hostPath` | `/lib/modules` | Node kernel-module directory mounted read-only |
-| `kernelModules.modules` | OTBR firewall modules | Modules loaded with `modprobe` before OTBR starts |
+| `kernelConfiguration.enabled` | `true` | Run the privileged host-configuration init container |
+| `kernelConfiguration.hostPath` | `/lib/modules` | Node kernel-module directory mounted read-only |
+| `kernelConfiguration.modules` | OTBR firewall modules | Modules loaded with `modprobe` before OTBR starts |
+| `kernelConfiguration.sysctls` | `[]` | Network sysctls written through `/proc/sys`; requested examples are commented in `values.yaml` |
 | `extraEnv`, `envFrom` | `[]` | Additional environment sources |
 | `extraInitContainers` | `[]` | Additional init containers rendered after the module loader |
 | `extraVolumes`, `extraVolumeMounts` | `[]` | Additional pod storage |
