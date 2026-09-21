@@ -160,7 +160,7 @@ A privileged init container loads the host kernel modules required by OTBR's fir
 - `nf_tables`
 - `nft_compat`
 
-It mounts the node's `/lib/modules` directory read-only and runs `modprobe` for each configured module. The same init container update requested sysctls.
+It mounts the node's `/lib/modules` directory read-only and runs `modprobe` for each configured module. The same init container can apply requested sysctls using standard dotted notation.
 
 ```yaml
 kernelConfiguration:
@@ -173,17 +173,18 @@ kernelConfiguration:
     - nf_tables
     - nft_compat
   sysctls:
-    - name: net/ipv6/conf/all/forwarding
+    - name: net.ipv6.conf.all.forwarding
       value: "1"
-    - name: net/ipv4/ip_forward
+    - name: net.ipv4.ip_forward
       value: "1"
-    - name: net/ipv6/conf/net1/accept_ra
+    - name: net.ipv6.conf.net1.accept_ra
       value: "2"
-    - name: net/ipv6/conf/net1/accept_ra_rt_info_max_plen
+    - name: net.ipv6.conf.net1.accept_ra_rt_info_max_plen
       value: "64"
 ```
 
-With the default `hostNetwork: true`, these writes modify the node's network namespace. 
+With the default `hostNetwork: true`, these writes modify the node's network namespace. The init container logs each successfully loaded module and updated sysctl.
+
 Disable the loader when modules and sysctls are managed by the node operating system or privileged init containers are prohibited. Additional entries in `extraInitContainers` run after the host setup container.
 
 ## Persistence
@@ -245,12 +246,12 @@ A digest takes precedence over `image.tag`. Review upstream release changes, bac
 | `persistence.enabled` | `true` | Use persistent storage instead of `emptyDir` |
 | `persistence.existingClaim` | `""` | Existing PVC name |
 | `persistence.size` | `1Gi` | New PVC request size |
-| `podSecurityContext` | RuntimeDefault seccomp | Pod security settings; optional non-host-network sysctls are commented in `values.yaml` |
+| `podSecurityContext` | RuntimeDefault seccomp | Pod-level security settings |
 | `containerSecurityContext.privileged` | `false` | Run the OTBR container privileged when required by the runtime |
 | `kernelConfiguration.enabled` | `true` | Run the privileged host-configuration init container |
 | `kernelConfiguration.hostPath` | `/lib/modules` | Node kernel-module directory mounted read-only |
 | `kernelConfiguration.modules` | OTBR firewall modules | Modules loaded with `modprobe` before OTBR starts |
-| `kernelConfiguration.sysctls` | `[]` | Network sysctls written through `/proc/sys`; requested examples are commented in `values.yaml` |
+| `kernelConfiguration.sysctls` | `[]` | Dotted network sysctls written through `/proc/sys`; examples are commented in `values.yaml` |
 | `extraEnv`, `envFrom` | `[]` | Additional environment sources |
 | `extraInitContainers` | `[]` | Additional init containers rendered after the module loader |
 | `extraVolumes`, `extraVolumeMounts` | `[]` | Additional pod storage |

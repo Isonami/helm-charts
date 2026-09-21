@@ -74,13 +74,23 @@ spec:
                 case "$operation" in
                   module)
                     modprobe "$1"
+                    echo "Loaded kernel module: $1"
                     shift
                     ;;
                   sysctl)
                     name="$1"
                     value="$2"
                     shift 2
-                    printf '%s\n' "$value" > "/proc/sys/$name"
+                    case "$name" in
+                      net.*) ;;
+                      *) echo >&2 "Refusing non-network sysctl: $name"; exit 1 ;;
+                    esac
+                    case "$name" in
+                      *..*) echo >&2 "Refusing unsafe sysctl name: $name"; exit 1 ;;
+                    esac
+                    path="$(printf '%s' "$name" | tr '.' '/')"
+                    printf '%s\n' "$value" > "/proc/sys/$path"
+                    echo "Updated sysctl: $name=$value"
                     ;;
                   *)
                     echo >&2 "Unknown host setup operation: $operation"
