@@ -150,4 +150,15 @@ entries:
     urls:
     - https://github.com/Isonami/helm-charts/releases/download/openthread-border-router-0.1.3/openthread-border-router-0.1.3.tgz
     version: 0.1.3
-generated: "2026-09-21T23:38:21.861418466Z"
+  remote-sync:
+  - apiVersion: v2
+    appVersion: v0.0.21
+    created: "2026-11-01T16:12:22.304528803Z"
+    description: Remote file synchronization service with OIDC authentication
+    digest: 88cb4c160c1eafb3815442b6b698631424e3af07e2c86c588e33a0370d18689b
+    name: remote-sync
+    type: application
+    urls:
+    - https://github.com/Isonami/helm-charts/releases/download/remote-sync-0.1.0/remote-sync-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-11-01T16:12:22.30454981Z"
