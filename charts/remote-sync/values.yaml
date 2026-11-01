@@ -1,0 +1,74 @@
+nameOverride: ""
+fullnameOverride: ""
+replicaCount: 1
+
+image:
+  repository: ghcr.io/isonami/studious-octo-succotash
+  tag: "" # Defaults to Chart.appVersion.
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  name: "" # Defaults to the release's full name.
+rbac:
+  create: true
+
+service:
+  port: 8080
+containerPort: 8080
+
+# Provision these Secrets separately, e.g. using ../bootstrap.
+secrets:
+  env: remote-sync-env
+  ssh: remote-sync-ssh
+  sshDefaultMode: 0600
+
+env:
+  DATA_PATH: /storage/data
+  KNOWN_HOSTS: /ssh/knownhosts
+  LS_SSH_KEY: /ssh/remote_sync_ls
+  RSYNC_SSH_KEY: /ssh/remote_sync_rsync
+  REMOTE_HOST: ru.www.cloud.isona.me
+  REMOTE_PORT: "2433"
+  REMOTE_USER: plexremote
+  OIDC_ISSUER_URL: https://sso.srv.nl.isona.me
+  OIDC_CLIENT_ID: remote-sync
+  OIDC_REDIRECT_URL: https://sync.srv.nl.isona.me/auth/callback
+  OIDC_ALLOWED_EMAILS: levru333@gmail.com
+
+persistence:
+  # Set existingClaim to reuse a PVC without Helm managing it.
+  existingClaim: ""
+  claimName: storage-data
+  storageClass: local-storage
+  volumeName: storage-data-remote-sync
+  accessModes:
+  - ReadWriteMany
+  size: 1Gi
+  mountPath: /storage/data
+
+caBundle:
+  enabled: true
+  configMapName: ca-bundle
+  key: trust-bundle.pem
+  mountPath: /etc/ssl/certs/ca-certificates.crt
+
+ingressRoute:
+  enabled: true
+  entryPoints:
+  - websecure
+  match: Host(`sync.srv.nl.isona.me`)
+  priority: 10
+  tlsSecretName: star-srv-nl-isona-me
+  # The existing bootstrap creates this replicated Secret by default.
+  createTlsSecret: false
+  replicateFrom: kube-system/star-srv-nl-isona-me
+
+resources: {}
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

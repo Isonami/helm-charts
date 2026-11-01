@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "remote-sync.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "remote-sync.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "remote-sync.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "remote-sync.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "remote-sync.serviceAccountName" . }}
+      automountServiceAccountToken: true
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: remote-sync
+        image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) | quote }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        ports:
+        - containerPort: {{ .Values.containerPort }}
+          name: web
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+          {{- range $key, $value := .Values.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+          {{- end }}
+        envFrom:
+        - secretRef:
+            name: {{ .Values.secrets.env }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        volumeMounts:
+        - name: storage-data
+          mountPath: {{ .Values.persistence.mountPath }}
+        - name: ssh
+          mountPath: /ssh
+          readOnly: true
+        {{- if .Values.caBundle.enabled }}
+        - name: ca-bundle
+          mountPath: {{ .Values.caBundle.mountPath }}
+          subPath: {{ .Values.caBundle.key }}
+          readOnly: true
+        {{- end }}
+      volumes:
+      - name: storage-data
+        persistentVolumeClaim:
+          claimName: {{ include "remote-sync.claimName" . }}
+      - name: ssh
+        secret:
+          secretName: {{ .Values.secrets.ssh }}
+          defaultMode: {{ .Values.secrets.sshDefaultMode }}
+      {{- if .Values.caBundle.enabled }}
+      - name: ca-bundle
+        configMap:
+          name: {{ .Values.caBundle.configMapName }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
